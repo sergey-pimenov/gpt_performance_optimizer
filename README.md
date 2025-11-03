@@ -1,5 +1,7 @@
 # GPT Performance Optimizer — Chrome MV3 Extension
 
+![Cover image](media/cover.png)
+
 Production-ready MV3 extension that intercepts ChatGPT conversation data before React ingests it, clamps to the last N messages to keep long chats fast, and provides a clean UI to reveal older messages on demand. It’s a direct port of the working userscript — algorithm unchanged.
 
 ## What it does
