@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT Optimizer Settings</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: #333;
+      background: #f9fafb;
+    }
+
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #111;
+    }
+
+    .setting-group {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .setting-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    .setting-description {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #10a37f;
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: #d1d5db;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch.active {
+      background: #10a37f;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: left 0.3s;
+    }
+
+    .toggle-switch.active .toggle-slider {
+      left: 22px;
+    }
+
+    .save-btn {
+      width: 100%;
+      padding: 10px;
+      background: #10a37f;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .save-btn:hover {
+      background: #0e8c6f;
+    }
+
+    .save-btn:active {
+      transform: scale(0.98);
+    }
+
+    .status-message {
+      text-align: center;
+      padding: 8px;
+      margin-top: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .status-message.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .status-message.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .footer {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 11px;
+      color: #9ca3af;
+      text-align: center;
+    }
+    
+    .disabled-overlay {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ GPT Performance Optimizer</h1>
+
+  <div class="setting-group" id="tailCountGroup">
+    <label class="setting-label" for="tailCount">Default messages to show</label>
+    <div class="setting-description">
+      Number of recent messages to display (10-800)
+    </div>
+    <input type="number" id="tailCount" min="5" max="10000" value="10">
+  </div>
+
+  <div class="setting-group">
+    <div class="toggle-container">
+      <div>
+        <div class="setting-label">Enable optimizer</div>
+        <div class="setting-description">Turn on/off message trimming</div>
+      </div>
+      <div class="toggle-switch active" id="enableToggle">
+        <div class="toggle-slider"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="setting-group" id="pageToggleGroup" style="display:none">
+    <div class="toggle-container">
+      <div>
+        <div class="setting-label">Enable for this page</div>
+        <div class="setting-description">Overrides the global setting</div>
+      </div>
+      <div class="toggle-switch" id="pageEnableToggle">
+        <div class="toggle-slider"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <div class="toggle-container">
+      <div>
+        <div class="setting-label">Verbose logs (developer)</div>
+        <div class="setting-description">Writes logs to console; logs are always buffered in window</div>
+      </div>
+      <div class="toggle-switch" id="logToggle">
+        <div class="toggle-slider"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="save-btn" id="saveBtn">Save Settings</button>
+  
+  <div class="status-message" id="statusMsg"></div>
+
+  <div class="footer">
+    v1.0.0 | ChatGPT Performance Optimizer
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
