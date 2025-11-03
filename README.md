@@ -4,6 +4,11 @@
 
 Production-ready MV3 extension that intercepts ChatGPT conversation data before React ingests it, clamps to the last N messages to keep long chats fast, and provides a clean UI to reveal older messages on demand. It’s a direct port of the working userscript — algorithm unchanged.
 
+<details>
+  <summary><i>The Video Demonstration</i></summary>
+  <video src="media/demo.mp4" controls></video>
+</details>
+
 ## What it does
 
 ChatGPT loads the entire conversation into React state, which slows down long chats. This extension:
