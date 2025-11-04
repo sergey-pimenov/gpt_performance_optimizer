@@ -2,7 +2,9 @@
 
 ![Cover image](media/cover.png)
 
-Production-ready MV3 extension that intercepts ChatGPT conversation data before React ingests it, clamps to the last N messages to keep long chats fast, and provides a clean UI to reveal older messages on demand. It’s a direct port of the working userscript — algorithm unchanged.
+Production-ready MV3 extension that intercepts ChatGPT conversation data before React ingests it, clamps to the last N messages to keep long chats fast, and provides a clean UI to reveal older messages on demand.
+⚠️ When you reveal hidden messages, they’re shown in a simplified form. Some features may be limited. If you’re missing something you need, email me at pimenov.web@gmail.com and I’ll do my best to add it.
+⚠️ Due to technical reasons (on ChatGPT’s side), it doesn’t work in ‘share’ chats such as https://chatgpt.com/share/*
 
 <details>
   <summary><i>The Video Demonstration</i></summary>
