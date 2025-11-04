@@ -4,7 +4,7 @@
 
 <details>
   <summary><i>🎞️ The Video Demonstration</i></summary>
-  <video src="media/demo.mp4" controls></video>
+<p>https://github.com/user-attachments/assets/8d118a5a-6044-4c43-ad11-56ca585b3c9a</p>
 </details>
 
 Production-ready MV3 extension that intercepts ChatGPT conversation data before React ingests it, clamps to the last N messages to keep long chats fast, and provides a clean UI to reveal older messages on demand.
