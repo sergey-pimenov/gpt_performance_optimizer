@@ -2,12 +2,16 @@
 
 ![Cover image](media/cover.png)
 
-Production-ready MV3 extension that intercepts ChatGPT conversation data before React ingests it, clamps to the last N messages to keep long chats fast, and provides a clean UI to reveal older messages on demand. It’s a direct port of the working userscript — algorithm unchanged.
-
 <details>
-  <summary><i>The Video Demonstration</i></summary>
-  <video src="media/demo.mp4" controls></video>
+  <summary><i>🎞️ The Video Demonstration</i></summary>
+<p>https://github.com/user-attachments/assets/8d118a5a-6044-4c43-ad11-56ca585b3c9a</p>
 </details>
+
+Production-ready MV3 extension that intercepts ChatGPT conversation data before React ingests it, clamps to the last N messages to keep long chats fast, and provides a clean UI to reveal older messages on demand.
+
+⚠️ When you reveal hidden messages, they’re shown in a simplified form. Some features may be limited. If you’re missing something you need, email me at pimenov.web@gmail.com and I’ll do my best to add it.
+
+⚠️ Due to technical reasons (on ChatGPT’s side), it doesn’t work in ‘share’ chats such as https://chatgpt.com/share/*
 
 ## What it does
 
@@ -137,14 +141,8 @@ Tip: The logger is buffered and quiet by default. Enable console output via popu
 ✅ Preserves conversation structure (parent/children/current_node)  
 ✅ Filters tool noise and reasoning tokens  
 ✅ Quiet buffered logger with optional verbose console  
-✅ Settings popup (default tail, enable optimizer, verbose logs)
+✅ Settings popup (default tail, enable optimizer, verbose logs)  
 ✅ Per-page ON/OFF toggle in popup (overrides global just for current conversation)
-
-## Differences from userscript
-
-- MV3 content scripts in MAIN world patch fetch/streams directly; a separate ISOLATED script bridges settings
-- SPA navigation watcher included (URL and conversation ID changes dispatch `cl:navigation-changed`)
-- Logger is buffered by default; console verbosity is user-controlled (popup or `TailLog.setVerbose(true)`) 
 
 ## Troubleshooting
 
