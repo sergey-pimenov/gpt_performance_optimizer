@@ -141,14 +141,8 @@ Tip: The logger is buffered and quiet by default. Enable console output via popu
 ✅ Preserves conversation structure (parent/children/current_node)  
 ✅ Filters tool noise and reasoning tokens  
 ✅ Quiet buffered logger with optional verbose console  
-✅ Settings popup (default tail, enable optimizer, verbose logs)
+✅ Settings popup (default tail, enable optimizer, verbose logs)  
 ✅ Per-page ON/OFF toggle in popup (overrides global just for current conversation)
-
-## Differences from userscript
-
-- MV3 content scripts in MAIN world patch fetch/streams directly; a separate ISOLATED script bridges settings
-- SPA navigation watcher included (URL and conversation ID changes dispatch `cl:navigation-changed`)
-- Logger is buffered by default; console verbosity is user-controlled (popup or `TailLog.setVerbose(true)`) 
 
 ## Troubleshooting
 
