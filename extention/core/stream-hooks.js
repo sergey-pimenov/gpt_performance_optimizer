@@ -89,7 +89,7 @@
     const newMapping = {};
     for (const id of keepIds) {
       const old = mapping[id]; if (!old) continue;
-      const neo = structuredClone(old);
+      const neo = JSON.parse(JSON.stringify(old));
       if (neo.message) {
         const role = neo.message.author?.role || neo.message.role;
         if (role === 'user' || role === 'assistant') {

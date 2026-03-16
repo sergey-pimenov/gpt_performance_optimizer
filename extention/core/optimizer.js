@@ -219,7 +219,7 @@
       out[id] = { ...src, parent, children: kids, message: msg };
     }
 
-    const newData = structuredClone(data);
+    const newData = JSON.parse(JSON.stringify(data));
     if (convPath === 'root') {
       newData.mapping = out;
       if (!keepIds.has(newData.current_node)) newData.current_node = leaf;
@@ -237,30 +237,36 @@
     window.fetch = async function (input, init) {
       const res = await origFetch(input, init);
       const url = typeof input === 'string' ? input : input?.url || '';
+
+      // Only intercept conversation-specific API calls, not all JSON responses
+      const urlConvId = convIdFromUrl(url);
+      if (!urlConvId) return res;
+
+      let bodyText = null; // Track consumed body for safe error recovery
       try {
         // Check if optimizer is enabled (per-conversation override wins)
-        const urlConvId = convIdFromUrl(url);
         if (!isOptimizerEnabledFor(urlConvId)) {
-          LOG('fetch:optimizer-disabled', { convId: urlConvId || null });
+          LOG('fetch:optimizer-disabled', { convId: urlConvId });
           return res;
         }
 
         const ct = res.headers.get('content-type') || '';
         if (!/json/i.test(ct)) return res;
 
-        const text = await res.text();
-        const parsed = parseConversationResponse(text);
-        if (!parsed) return new Response(text, { status: res.status, statusText: res.statusText, headers: res.headers });
+        bodyText = await res.text();
+        // After res.text(), the original body is consumed — always use bodyText from here on
+        const parsed = parseConversationResponse(bodyText);
+        if (!parsed) return new Response(bodyText, { status: res.status, statusText: res.statusText, headers: res.headers });
 
         const { data, conv, convPath, map } = parsed;
-        const convId = extractConvId(conv) || extractConvId(url);
+        const convId = extractConvId(conv) || urlConvId;
 
         const trimResult = trimConversationData(map, conv, convId);
 
         // If no trimming needed (conversation is small), return original response
         if (!trimResult) {
           LOG('fetch:no-trim-needed', { convId });
-          return new Response(text, { status: res.status, statusText: res.statusText, headers: res.headers });
+          return new Response(bodyText, { status: res.status, statusText: res.statusText, headers: res.headers });
         }
 
         const { keptIdsArr, leaf, fullFlatLength, keptRenderableByReact } = trimResult;
@@ -269,10 +275,16 @@
         const h = new Headers(res.headers);
         h.set('content-type', 'application/json; charset=utf-8');
         h.delete('content-length');
+        h.delete('content-encoding');
         setTimeout(() => window.dispatchEvent(new CustomEvent('cl:tail-meta')), 0);
         LOG('fetch:trimmed', { convId, total: fullFlatLength, kept: keptRenderableByReact });
         return new Response(JSON.stringify(newData), { status: res.status, statusText: res.statusText, headers: h });
       } catch (e) {
+        LOG('fetch:error', { url, error: e?.message });
+        // If body was already consumed, reconstruct Response from saved text
+        if (bodyText !== null) {
+          return new Response(bodyText, { status: res.status, statusText: res.statusText, headers: res.headers });
+        }
         return res;
       }
     };
