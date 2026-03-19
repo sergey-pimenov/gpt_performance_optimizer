@@ -148,6 +148,13 @@
         break;
       }
 
+      // Ignore escaped occurrences inside JSON strings, e.g. \"mapping\".
+      if (keyIdx > 0 && text[keyIdx - 1] === '\\') {
+        out += text.slice(i, keyIdx + searchKey.length);
+        i = keyIdx + searchKey.length;
+        continue;
+      }
+
       LOG('stream:findkey:found', { key, pos: keyIdx });
       out += text.slice(i, keyIdx);
       const colon = text.indexOf(':', keyIdx);
@@ -187,6 +194,17 @@
 
     LOG('stream:findkey:done', { key, changes });
     return { text: out, changes };
+  }
+
+  function isLikelyConversationPayload(text) {
+    if (!text || typeof text !== 'string') return false;
+    if (!text.includes('"mapping"')) return false;
+
+    // Most full conversation payloads include one of these anchors.
+    return text.includes('"current_node"') ||
+      text.includes('"conversation_id"') ||
+      /\/backend-api\/conversation\/[0-9a-f-]{36}/i.test(text) ||
+      /"conversation"\s*:\s*\{/.test(text);
   }
 
   function isLikelyConvMapping(map) {
@@ -250,7 +268,8 @@
     LOG('stream:transform:conversation-result', { changes: result.changes });
 
     // Fallback to mapping-only if no conversation changes
-    if (result.changes === 0 && text.includes('"mapping"')) {
+    const shouldTryMappingFallback = result.changes === 0 && isLikelyConversationPayload(text);
+    if (shouldTryMappingFallback) {
       LOG('stream:transform:trying-mapping-fallback');
       result = findAndReplaceKey(text, 'mapping', (objStr, fullText, keyIdx) => {
         const jsonSize = objStr.length;
@@ -277,6 +296,8 @@
         return null;
       });
       LOG('stream:transform:mapping-result', { changes: result.changes });
+    } else if (result.changes === 0 && text.includes('"mapping"')) {
+      LOG('stream:transform:skip-mapping-fallback');
     }
 
     return result.changes > 0 ? result : { text, changes: 0 };
@@ -418,8 +439,9 @@
       const currentConvId = convIdFromLocation();
 
       if (currentUrl !== lastUrl || currentConvId !== lastConvId) {
+        const prevConvId = lastConvId;
         LOG('stream:spa-navigation', {
-          from: lastConvId,
+          from: prevConvId,
           to: currentConvId,
           urlChanged: currentUrl !== lastUrl
         });
@@ -430,7 +452,9 @@
         // Trigger metadata refresh for toolbar
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('cl:tail-meta'));
-          window.dispatchEvent(new CustomEvent('cl:navigation-changed'));
+          window.dispatchEvent(new CustomEvent('cl:navigation-changed', {
+            detail: { from: prevConvId, to: currentConvId }
+          }));
         }, 100);
       }
     };

@@ -63,9 +63,10 @@
   }
 
   function checkChatGPTLoaded() {
-    const thread = document.getElementById('thread');
-    return thread?.querySelector('div.flex.flex-col.text-sm') &&
-      thread.querySelector('article[data-testid^="conversation-turn-"]');
+    const hasTurns = !!document.querySelector(
+      '#thread article[data-testid^="conversation-turn-"], article[data-testid^="conversation-turn-"], [data-message-author-role]'
+    );
+    return hasTurns;
   }
 
   function updateChatGPTLoader(loader, success) {
@@ -104,7 +105,7 @@
   }
 
   function monitorChatGPTLoading(loader, opts) {
-    let attempts = 0, max = 30;
+    let attempts = 0, max = 120;
     const t = setInterval(() => {
       attempts++;
       if (checkChatGPTLoaded()) {
@@ -116,7 +117,7 @@
         updateChatGPTLoader(loader, false);
         try { opts?.onTimeout?.() } catch { }
       }
-    }, 1000);
+    }, 250);
     // Attach timer reference to loader for cleanup on re-inits
     try { loader.__monTimer = t; } catch { }
   }
@@ -237,7 +238,7 @@
   else init();
 
   // Re-init loader on SPA navigation
-  window.addEventListener('cl:navigation-changed', () => {
+  window.addEventListener('cl:navigation-changed', (e) => {
     const loaderEnabled = localStorage.getItem('cl:loader');
     if (loaderEnabled === '0') return;
 
@@ -246,6 +247,13 @@
     if (url === '/' || url === '/chat' || !url.includes('/c/')) {
       return; // No loader for home page or new chats
     }
+
+    // First turn transition naturally renders immediately, but let the normal loader check handles it.
+    // Removes the aggressive 0ms reset here so it can properly increment if loading takes a moment.
+
+    // Skip only if the NEW chat content happens to be already painted.
+    // However, since old turns might linger during SPA transitions, let `init()`
+    // handle the timer and wait cleanly, guaranteeing it doesn't instantly snap to 0s.
 
     // Remove existing loader if any (both main and fallback)
     removeExistingLoader();
