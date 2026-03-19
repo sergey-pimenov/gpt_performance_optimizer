@@ -87,68 +87,10 @@
 
       /* Cards */
       #cl-older-stack {
-        --clx-card-w: 820px
-      }
-
-      #cl-older-stack>article[data-cl-local] {
         width: 100%;
-        margin: 26px 0;
-        display: flex;
-        justify-content: center;
       }
 
-      #cl-older-stack>article[data-cl-local] .clx-row {
-        width: min(var(--clx-card-w), 100%)
-      }
-
-      #cl-older-stack>article[data-cl-local][data-role="assistant"] .clx-card {
-        max-width: 100%;
-        background: rgba(0, 0, 0, 0);
-        color: var(--text-primary, #111);
-        padding: 18px 22px;
-      }
-
-      #cl-older-stack>article[data-cl-local][data-role="user"] .clx-row {
-        display: flex;
-        justify-content: flex-end;
-      }
-
-      #cl-older-stack>article[data-cl-local][data-role="user"] .clx-card {
-        display: inline-block;
-        width: auto;
-        max-width: var(--user-chat-width, 70%);
-        background: var(--theme-user-msg-bg, var(--message-surface, #f7f8fa));
-        color: var(--theme-user-msg-text, var(--text-primary, #111));
-        border: 1px solid var(--border-light, #eaecef);
-        border-radius: 16px;
-        box-shadow: 0 3px 16px rgba(0, 0, 0, .05);
-        padding: 14px 18px;
-      }
-
-      .clx-role {
-        opacity: .55;
-        font-size: 12.5px;
-        margin-bottom: 8px
-      }
-
-      @media (max-width: 1283px) {
-        #cl-older-stack {
-          --clx-card-w: 640px;
-          padding: 0 24px;
-        }
-
-        #cl-older-stack>article[data-cl-local][data-role="assistant"] .clx-card {
-          padding: 0;
-        }
-      }
-
-      @media (max-width: 639px) {
-        #cl-older-stack {
-          padding: 0 16px;
-        }
-      }
-
-      /* Markdown */
+      /* Markdown overrides for GPT styling */
       .clx-md {
         font: 15px/1.65 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
         color: var(--text-primary, #111)
@@ -258,14 +200,14 @@
 
       /* Code & copy */
       .clx-md pre {
-        background: var(--composer-surface, var(--message-surface, #f9f9f9));
-        border: 1px solid var(--border-light, #e5e7eb);
-        padding: 14px 16px;
-        border-radius: 12px;
-        overflow: auto;
-        margin: 14px 0;
+        background: transparent;
+        border: none;
+        padding: 0 16px 16px 16px;
+        margin: 0;
+        border-radius: 0;
+        overflow-x: auto;
         scrollbar-width: thin;
-        scrollbar-color: var(--scrollbar-color, #cbd5e1) var(--bg-secondary, #e9eef5);
+        scrollbar-color: var(--scrollbar-color, #cbd5e1) transparent;
       }
 
       .clx-md code {
@@ -352,14 +294,40 @@
       }
 
       .clx-codewrap {
-        position: relative
+        position: relative;
+        background-color: #f9f9f9;
+        border: 1px solid rgba(13,13,13,0.05);
+        border-radius: 24px;
+        margin: 16px 0;
+        overflow: hidden;
+      }
+      
+      @media (prefers-color-scheme: dark) {
+         .clx-codewrap {
+             background-color: var(--token-bg-elevated-secondary, #F9F9F9);
+             border-color: rgba(255,255,255,0.1);
+         }
+      }
+
+      .clx-codewrap-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 16px;
+        font-size: 13px;
+        color: var(--text-primary, #333);
+      }
+      
+      .clx-codewrap-lang {
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        text-transform: capitalize;
+        color: var(--text-secondary, #666);
       }
 
       .clx-copy-btn {
         all: unset;
-        position: absolute;
-        top: 8px;
-        right: 10px;
         display: flex;
         align-items: center;
         gap: 6px;
@@ -373,7 +341,10 @@
       }
 
       .clx-copy-btn:hover {
-        background: var(--interactive-bg-secondary-hover, #eef2ff)
+        background: rgba(0,0,0,0.05);
+      }
+      @media (prefers-color-scheme: dark) {
+        .clx-copy-btn:hover { background: rgba(255,255,255,0.1); }
       }
 
       .clx-copy-btn .clx-copy-icn {
@@ -487,11 +458,31 @@
     if (!root) return;
     root.querySelectorAll('pre').forEach(pre => {
       if (pre.parentElement && pre.parentElement.classList.contains('clx-codewrap')) return;
-      if (window.hljs) pre.querySelectorAll('code').forEach(el => window.hljs.highlightElement(el));
+      
+      pre.style.padding = '0px 20px 12px';
+      
+      let lang = '';
+      const codeEl = pre.querySelector('code');
+      if (codeEl) {
+        // e.g. language-cpp
+        const match = Array.from(codeEl.classList).find(c => c.startsWith('language-'));
+        if (match) {
+          lang = match.replace('language-', '');
+        }
+        if (window.hljs) window.hljs.highlightElement(codeEl);
+      }
 
-      const wrap = document.createElement('div'); wrap.className = 'clx-codewrap';
-      pre.parentElement?.insertBefore(wrap, pre); wrap.appendChild(pre);
-
+      const wrap = document.createElement('div'); 
+      wrap.className = 'clx-codewrap';
+      
+      // Header for language and copy button
+      const header = document.createElement('div');
+      header.className = 'clx-codewrap-header';
+      
+      const langSpan = document.createElement('span');
+      langSpan.className = 'clx-codewrap-lang';
+      langSpan.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" aria-hidden="true" class="icon-sm me-2.5 shrink-0" style="display:inline-block; vertical-align:middle; margin-right:6px;"><use href="/cdn/assets/sprites-core-gmavja41.svg#e45ab3" fill="currentColor"></use></svg>${lang || 'code'}`;
+      
       const btn = document.createElement('button');
       btn.type = 'button'; btn.className = 'clx-copy-btn';
       btn.setAttribute('aria-label', 'Copy code');
@@ -499,7 +490,6 @@
       btn.innerHTML = `<span class="clx-copy-icn">${COPY_SVG}</span><span class="clx-copy-txt">Copy code</span>`;
       btn.addEventListener('click', async () => {
         try {
-          const codeEl = pre.querySelector('code');
           const text = codeEl ? codeEl.textContent : pre.textContent;
           await navigator.clipboard.writeText(text || '');
           btn.dataset.copied = '1';
@@ -513,26 +503,106 @@
           setTimeout(() => btn.querySelector('.clx-copy-txt').textContent = 'Copy code', 1200);
         }
       });
-      wrap.appendChild(btn);
+      
+      header.appendChild(langSpan);
+      header.appendChild(btn);
+      
+      pre.parentElement?.insertBefore(wrap, pre); 
+      wrap.appendChild(header);
+      wrap.appendChild(pre);
     });
   }
 
-  function makeArticle(role, text) {
-    const a = document.createElement('article');
-    a.setAttribute('data-cl-local', '1');
-    a.setAttribute('data-role', role === 'user' ? 'user' : 'assistant');
+  function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[tag]));
+  }
 
-    const html = mdToSafeHTML(text);
-    const header = (role === 'assistant') ? `<div class="clx-role">GPT simplified</div>` : '';
-    a.innerHTML = `
-      <div class="clx-row">
-        <div class="clx-card">
-          ${header}
-          <div class="clx-md">${html || '<em class="clx-empty">[empty]</em>'}</div>
+  function makeArticle(role, text) {
+    const section = document.createElement('section');
+    section.setAttribute('data-cl-local', '1');
+    section.setAttribute('data-role', role === 'user' ? 'user' : 'assistant');
+    section.setAttribute('data-turn', role === 'user' ? 'user' : 'assistant');
+    section.dir = 'auto';
+    section.className = 'text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&:has([data-writing-block])>*]:pointer-events-auto scroll-mt-(--header-height)';
+
+    const isUser = role === 'user';
+    const copySvgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" aria-hidden="true" class="icon"><use href="/cdn/assets/sprites-core-gmavja41.svg#ce3544" fill="currentColor"></use></svg>';
+
+    if (isUser) {
+      const escapedText = escapeHTML(text || '') || '<em class="clx-empty">[empty]</em>';
+      section.innerHTML = `
+        <h4 class="sr-only select-none">You said:</h4>
+        <div class="text-base my-auto mx-auto pt-12 [--thread-content-margin:var(--thread-content-margin-xs,calc(var(--spacing)*4))] @w-sm/main:[--thread-content-margin:var(--thread-content-margin-sm,calc(var(--spacing)*6))] @w-lg/main:[--thread-content-margin:var(--thread-content-margin-lg,calc(var(--spacing)*16))] px-(--thread-content-margin)">
+          <div class="[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col">
+            <div class="flex max-w-full flex-col gap-4 grow">
+              <div data-message-author-role="user" dir="auto" class="min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal outline-none keyboard-focused:focus-ring [.text-message+&]:mt-1">
+                <div class="flex w-full flex-col gap-1 empty:hidden items-end rtl:items-start">
+                  <div class="user-message-bubble-color corner-superellipse/0.98 relative rounded-[22px] px-4 py-2.5 leading-6 max-w-(--user-chat-width,70%)">
+                    <div class="whitespace-pre-wrap">${escapedText}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="z-0 flex justify-end">
+              <div aria-label="Your message actions" class="touch:-me-2 touch:-ms-3.5 -ms-2.5 -me-1 flex flex-wrap items-center gap-y-4 p-1 select-none focus-within:transition-none hover:transition-none touch:pointer-events-auto touch:opacity-100 duration-300 group-hover/turn-messages:delay-300 pointer-events-none opacity-0 motion-safe:transition-opacity group-hover/turn-messages:pointer-events-auto group-hover/turn-messages:opacity-100 group-focus-within/turn-messages:pointer-events-auto group-focus-within/turn-messages:opacity-100 has-data-[state=open]:pointer-events-auto has-data-[state=open]:opacity-100" role="group">
+                <button class="text-token-text-secondary hover:bg-token-bg-secondary rounded-lg clx-msg-copy" aria-label="Copy message" type="button">
+                  <span class="flex items-center justify-center touch:w-10 h-8 w-8">${copySvgIcon}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>`;
-    enhanceCodeBlocks(a);
-    return a;
+      `;
+    } else {
+      const html = mdToSafeHTML(text) || '<em class="clx-empty">[empty]</em>';
+      section.className = section.className.replace('scroll-mt-(--header-height)', 'scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]');
+      section.innerHTML = `
+        <h4 class="sr-only select-none">ChatGPT said:</h4>
+        <div class="text-base my-auto mx-auto pb-10 [--thread-content-margin:var(--thread-content-margin-xs,calc(var(--spacing)*4))] @w-sm/main:[--thread-content-margin:var(--thread-content-margin-sm,calc(var(--spacing)*6))] @w-lg/main:[--thread-content-margin:var(--thread-content-margin-lg,calc(var(--spacing)*16))] px-(--thread-content-margin)">
+          <div class="[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn">
+            <div class="flex max-w-full flex-col gap-4 grow">
+              <div data-message-author-role="assistant" dir="auto" class="min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal outline-none keyboard-focused:focus-ring [.text-message+&]:mt-1">
+                <div class="flex w-full flex-col gap-1 empty:hidden">
+                  <div style="height: 40px;"></div>
+                  <div class="markdown prose dark:prose-invert w-full wrap-break-word light markdown-new-styling">
+                    ${html}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="z-0 flex min-h-[46px] justify-start">
+              <div aria-label="Response actions" class="touch:-me-2 touch:-ms-3.5 -ms-2.5 -me-1 flex flex-wrap items-center gap-y-4 p-1 select-none touch:w-[calc(100%+--spacing(3.5))] -mt-1 w-[calc(100%+--spacing(2.5))] duration-[1.5s] focus-within:transition-none hover:transition-none touch:pointer-events-auto pointer-events-none [mask-image:linear-gradient(to_right,black_33%,transparent_66%)] [mask-size:300%_100%] [mask-position:100%_0%] motion-safe:transition-[mask-position] group-hover/turn-messages:pointer-events-auto group-hover/turn-messages:[mask-position:0_0] group-focus-within/turn-messages:pointer-events-auto group-focus-within/turn-messages:[mask-position:0_0] has-data-[state=open]:pointer-events-auto has-data-[state=open]:[mask-position:0_0]" role="group">
+                <button class="text-token-text-secondary hover:bg-token-bg-secondary rounded-lg clx-msg-copy" aria-label="Copy response" type="button">
+                  <span class="flex items-center justify-center touch:w-10 h-8 w-8">${copySvgIcon}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Attach copy event
+    const copyBtn = section.querySelector('.clx-msg-copy');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(text || '');
+          const iconSpan = copyBtn.querySelector('span');
+          iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+          setTimeout(() => { iconSpan.innerHTML = copySvgIcon; }, 1200);
+        } catch {}
+      });
+    }
+
+    enhanceCodeBlocks(section);
+    return section;
   }
 
   window.CLTheme = { ensureStyles, stringifyParts, mdToSafeHTML, makeArticle };

@@ -90,7 +90,7 @@
     }
     if (!total) {
       // Fallback to DOM count if meta not ready
-      total = document.querySelectorAll('article[data-testid^="conversation-turn-"]').length || 0;
+      total = document.querySelectorAll('[data-testid^="conversation-turn-"]').length || 0;
       displayed = total;
     }
     
@@ -219,48 +219,16 @@
   }
 
   function ensureLocalStack(){
-    const first=document.querySelector('article[data-testid^="conversation-turn-"], main article');
-    if(!first) return null;
+    const first=document.querySelector('[data-testid^="conversation-turn-"], main article, main section');
+    if(!first) {
+        console.warn('[ChatGPT-Opt] Cannot find first conversation element to inject #cl-older-stack');
+        return null;
+    }
     let stack=document.getElementById('cl-older-stack');
-    const bar = document.getElementById('chatgpt-restore-btn');
     if(!stack){ 
       stack=document.createElement('div'); 
       stack.id='cl-older-stack'; 
-      // Prefer placing stack right after toolbar if it exists, so the toolbar stays on top
-      if (bar && bar.parentElement === first.parentElement) {
-        // Safety: avoid inserting if that would create a DOM cycle (stack contains bar)
-        try {
-          if (!stack.contains(bar) && !bar.contains(stack)) {
-            bar.insertAdjacentElement('afterend', stack);
-          } else {
-            // fallback to safe insert
-            first.parentElement.insertBefore(stack, first);
-          }
-        } catch (e) {
-          // In some edge cases insertAdjacentElement can throw; fallback to safe insert
-          first.parentElement.insertBefore(stack, first);
-        }
-      } else {
-        first.parentElement.insertBefore(stack, first); 
-      }
-    } else {
-      // Keep stack positioned right after toolbar when present
-      if (bar) {
-        // If stack already contains the toolbar (bad state), move stack before first
-        if (stack.contains(bar)) {
-          try { first.parentElement.insertBefore(stack, first); } catch(e){}
-        } else if (stack.previousElementSibling !== bar) {
-          try {
-            if (!stack.contains(bar) && !bar.contains(stack)) {
-              bar.insertAdjacentElement('afterend', stack);
-            } else {
-              first.parentElement.insertBefore(stack, first);
-            }
-          } catch(e) {
-            try { first.parentElement.insertBefore(stack, first); } catch(e){}
-          }
-        }
-      }
+      first.parentElement.insertBefore(stack, first); 
     }
     return stack;
   }
@@ -269,14 +237,59 @@
     const defaultTail = (window.TailCore?.globalSettings?.defaultTail) || 10;
     const bar=document.createElement('div'); 
     bar.id='chatgpt-restore-btn'; 
-    bar.className='clx-bar';
+    bar.className='clx-bar clx-header-bar';
     bar.innerHTML=`
-      <button id="show-all-btn" class="clx-linkbtn clx-reset">Show all</button>
+      <button id="show-all-btn" class="clx-linkbtn clx-reset">
+        <span class="clx-txt-long">Show all</span><span class="clx-txt-short">all</span>
+      </button>
       <button id="show-old-btn" class="clx-pill clx-reset">
         <span class="clx-icn">${CLX_ICONS.plus || '+'}</span>
-        <span class="clx-pill-text">10 previous (…) </span>
+        <span class="clx-pill-text">
+          <span class="clx-txt-long">10 previous (…) </span>
+          <span class="clx-txt-short">10</span>
+        </span>
       </button>
-      <button id="reset-to-latest-btn" class="clx-linkbtn clx-reset">Show only ${defaultTail} latest</button>`;
+      <button id="reset-to-latest-btn" class="clx-linkbtn clx-reset">
+        <span class="clx-txt-long">Show only ${defaultTail} latest</span><span class="clx-txt-short">only ${defaultTail}</span>
+      </button>`;
+    
+    // Inject styles for the header bar version
+    if (!document.getElementById('clx-header-bar-styles')) {
+      const s = document.createElement('style');
+      s.id = 'clx-header-bar-styles';
+      s.textContent = `
+        .clx-header-bar {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-left: 16px;
+          pointer-events: auto;
+          /* Reset basic styling since it's no longer a full width banner */
+          background: transparent !important;
+          border: none !important;
+          padding: 0 !important;
+        }
+        .clx-header-bar .clx-linkbtn { font-size: 13px; cursor: pointer; color: var(--text-primary); text-decoration: underline; background: transparent; border: none; }
+        .clx-header-bar .clx-pill { display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; background: var(--main-surface-tertiary); border: 1px solid var(--border-light); cursor: pointer; color: var(--text-primary); font-size: 13px; }
+        .clx-header-bar .clx-icn { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; margin: 0; line-height: 1; }
+        .clx-header-bar .clx-icn svg { width: 100%; height: 100%; }
+        .clx-header-bar .is-disabled { opacity: 0.5; pointer-events: none; }
+        
+        .clx-txt-short { display: none; }
+        @media (max-width: 1150px) {
+          .clx-txt-long { display: none; }
+          .clx-txt-short { display: inline; }
+        }
+
+        .sticky:has(#page-header), .sticky:has(.clx-header-bar), #page-header, .sticky.bg-white\\/95 {
+          background-color: var(--main-surface-primary, #ffffff) !important;
+          background: var(--main-surface-primary, #ffffff) !important;
+          backdrop-filter: none !important;
+        }
+      `;
+      (document.head||document.documentElement).appendChild(s);
+    }
+      
     return bar;
   }
 
@@ -290,18 +303,19 @@
         LOG('toolbar:optimizer-disabled');
         return false;
       }
-      const first=document.querySelector('article[data-testid^="conversation-turn-"], main article'); 
-      if(!first) return false;
+      
+      const host = document.getElementById('clx-statusbar');
+      if(!host) return false;
       
       // Check if bar already in correct position
-      if(first.previousElementSibling?.id==='chatgpt-restore-btn') {
+      if(host.nextElementSibling?.id==='chatgpt-restore-btn') {
         LOG('toolbar:already-in-position');
         return true;
       }
       
       // Get existing bar or create new one
       const bar=document.getElementById('chatgpt-restore-btn')||makeBar(); 
-      first.parentElement.insertBefore(bar, first);
+      host.parentElement.insertBefore(bar, host.nextSibling);
       LOG('toolbar:mounted');
 
   const showBtn=document.getElementById('show-old-btn');
@@ -314,11 +328,25 @@
         const {renderableTotal=0,keptRenderableByReact=0}=getMeta(id); 
         const inj=getInjected(id);
         const olderLeft=Math.max(0, renderableTotal-keptRenderableByReact-inj);
-        const text=`<span class="clx-icn">${CLX_ICONS.plus || '+'}</span><span class="clx-pill-text">10 previous (${olderLeft})</span>`;
+        
+        const defaultTail = (window.TailCore?.globalSettings?.defaultTail) || 10;
+        const step = CFG?.STEP || 10;
+        
+        const text=`<span class="clx-icn">${CLX_ICONS.plus || '+'}</span>` +
+                   `<span class="clx-pill-text">` +
+                     `<span class="clx-txt-long">${step} previous (${olderLeft})</span>` +
+                     `<span class="clx-txt-short">${step}</span>` +
+                   `</span>`;
         showBtn.innerHTML=text;
         showBtn.classList.toggle('is-disabled', olderLeft<=0);
         allBtn.classList.toggle('is-disabled', olderLeft<=0);
-        allBtn.textContent = olderLeft>0?`Show all (${olderLeft})`:'Show all';
+        
+        allBtn.innerHTML = olderLeft>0 
+          ? `<span class="clx-txt-long">Show all (${olderLeft})</span><span class="clx-txt-short">all(${olderLeft})</span>` 
+          : `<span class="clx-txt-long">Show all</span><span class="clx-txt-short">all</span>`;
+          
+        resetBtn.innerHTML = `<span class="clx-txt-long">Show only ${defaultTail} latest</span><span class="clx-txt-short">only ${defaultTail}</span>`;
+        
         allBtn.setAttribute('aria-disabled', (olderLeft<=0) ? 'true' : 'false');
         showBtn.setAttribute('aria-disabled', (olderLeft<=0) ? 'true' : 'false');
       };
@@ -327,10 +355,15 @@
       showBtn.__refresh = refreshLabels;
 
       function loadOlderMessages(count) {
+        LOG('toolbar:load-older-clicked', count);
         const id = convIdFromLocation();
-        if (!id) return;
+        if (!id) {
+          return;
+        }
         const stack = ensureLocalStack();
-        if (!stack) return;
+        if (!stack) {
+          return;
+        }
         
         const meta = getMeta(id);
         const flat = getFlat(id);
@@ -340,7 +373,9 @@
         const left = Math.max(0, total - (base + inj));
         
         const addN = count === 'all' ? left : Math.min(count, left);
-        if (addN <= 0) return;
+        if (addN <= 0) {
+          return;
+        }
         
         const start = total - (base + inj + addN);
         const end = total - (base + inj);
@@ -358,6 +393,7 @@
         stack.prepend(frag);
         setInjected(id, inj + addN);
         refreshLabels();
+        renderStatusBar(); // Update top right status message (10/50 -> 20/50, etc)
 
         // After DOM updates, scroll so that the last inserted item sits at the top of the viewport
         // This preserves context and avoids a large jump to the very top of the newly added block
@@ -385,8 +421,7 @@
         const defaultTail = (window.TailCore?.globalSettings?.defaultTail) || 10;
         setTail(id, defaultTail); 
         refreshLabels(); 
-        // Update button text with current default
-        resetBtn.textContent = `Show only ${defaultTail} latest`;
+        renderStatusBar(); // Synchronize top status bar
       };
 
       // no per-page toggle in toolbar
@@ -424,25 +459,15 @@
         remountTimeout = setTimeout(() => {
           remountTimeout = null;
           
-          const bar = document.getElementById('chatgpt-restore-btn');
-          const first = document.querySelector('article[data-testid^="conversation-turn-"], main article');
           const isOnNow = (window.TailCore?.isOptimizerEnabledForCurrent?.()) !== false;
+          const rootBar = document.getElementById('chatgpt-restore-btn');
+          
           if (!isOnNow) {
-            if (bar) { LOG('toolbar:removing-optimizer-disabled'); bar.remove(); }
+            if (rootBar) { LOG('toolbar:removing-optimizer-disabled'); rootBar.remove(); }
             return;
           }
-          // If bar doesn't exist but articles do and optimizer is on, remount
-          if (!bar && first) {
-            LOG('toolbar:auto-remount');
-            mountBar();
-          }
-          // If bar exists but is not in correct position, fix it
-          else if (bar && first && bar.nextElementSibling !== first) {
-            LOG('toolbar:auto-reposition');
-            first.parentElement.insertBefore(bar, first);
-          }
-          
-          // Also verify status bar is mounted and in right position
+
+          // Also verify status bar is mounted and in right position (needs to be done FIRST because mountBar depends on it)
           if (isConversationRoute()) {
             const sb = document.getElementById('clx-statusbar');
             const host = findStatusContainer();
@@ -451,6 +476,19 @@
             } else if (sb && host && sb.parentElement !== host) {
               host.appendChild(sb);
             }
+          }
+
+          // Now check the action bar
+          const bar = document.getElementById('chatgpt-restore-btn');
+          const statusHost = document.getElementById('clx-statusbar');
+          
+          if (!bar && statusHost) {
+            LOG('toolbar:auto-remount');
+            mountBar();
+          }
+          else if (bar && statusHost && statusHost.nextSibling !== bar) {
+            LOG('toolbar:auto-reposition');
+            statusHost.parentElement.insertBefore(bar, statusHost.nextSibling);
           }
           // Avoid constant refreshes post-load; status bar updates via events/navigation
         }, 100); // 100ms debounce
