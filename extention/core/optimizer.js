@@ -250,6 +250,20 @@
           return res;
         }
 
+        // Never process non-2xx responses. They may be transient API errors (e.g. 422)
+        // and should pass through immediately without consuming the body.
+        if (!res.ok) {
+          LOG('fetch:non-ok', { convId: urlConvId, status: res.status, url });
+          setTimeout(() => {
+            try {
+              window.dispatchEvent(new CustomEvent('cl:conversation-fetch-error', {
+                detail: { convId: urlConvId, status: res.status, url }
+              }));
+            } catch { }
+          }, 0);
+          return res;
+        }
+
         const ct = res.headers.get('content-type') || '';
         if (!/json/i.test(ct)) return res;
 
